@@ -1,0 +1,58 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: black;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    text-align: center;
+    margin-top: 50px;
+    display: flex;
+    flex-direction: column; /* Mantiene los elementos en forma vertical */
+    align-items: center; /* Centra horizontalmente */
+    justify-content: center; /* Centra verticalmente */
+    height: 100vh; /* Ocupa toda la altura de la ventana */
+    box-sizing: border-box;
+}
+
+/* Estilos CSS para los botones */
+.btn {
+    display: inline-block; /* Asegura que sean elementos bloqueables */
+    width: 150px;
+    height: 40px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #066db1;
+    color: white;
+    border: none;
+    margin: 10px 0; /* Espaciado vertical */
+    text-align: center; /* Centra el texto en los botones */
+    border-radius: 5px; /* Opcional, para mejorar el diseño */
+}
+
+.reset {
+    background-color: red;
+    display: block;
+    width: 150px;
+    height: 40px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    color: white;
+    border: none;
+    margin: 10px;
+    cursor: pointer;
+
+    text-align: center; /* Centra el texto en los botones */
+    border-radius: 5px; /* Opcional, para mejorar el diseño */
+}
+
+.boton:hover {
+    background-color: darkblue;
+}
+
+
+
