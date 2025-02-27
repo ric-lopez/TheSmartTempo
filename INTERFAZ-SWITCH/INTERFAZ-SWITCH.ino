@@ -17,6 +17,9 @@ MCUFRIEND_kbv tft;
 
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
 
+bool botonesBloqueados = false;  // Controla si los botones están bloqueados
+
+
 //Arreglo en el que se declaran toods los botones que se usan en la interfaz
 Adafruit_GFX_Button bt_btn, manual_btn, menu_btn, m12_btn, m13_btn, m23_btn, reset_btn;
 
@@ -74,8 +77,8 @@ void loop() {
     Serial.print("Received data: ");  // Para ver que es lo que se recibe
     Serial.println(inData);
   }
-  if(inData.charAt(0)<48  || inData.charAt(0)>90){
-      inData="INIT";
+  if (inData.charAt(0) < 48  || inData.charAt(0) > 90) {
+    inData = "INIT";
   }
   //Menú para poder interactuar con los botones.
 
@@ -106,44 +109,63 @@ void loop() {
 
       break;
 
-    case 'R':                    // Caso Manual (Medición)
-      update_button_list(menu);  //
+    case 'R': //Caso Manualpara la medición
+      update_button_list(menu);
       update_button_list(buttons);
+      /*
+        Para evitar que se presionen un botón antes de presionar reset usaremos una bandera
+        Si los botones no estan bloqueados podras acceder a cualquiera
+        Pero al presionar uno de los botones en automático vamos a cambiar la bandera para bloquearlo
 
-      if (m12_btn.justPressed()) {
-        Serial.println("m12");
-        tft.fillRect(15, 42, 210, 65, BLACK);
-        tft.fillRect(30, 135, 20, 20, GREEN);  //pintamos recuadro a lado del boton 1a2 para indicar su uso
-        inData = "T";
-      } else if (m13_btn.justPressed()) {
-        Serial.println("m13");
-        tft.fillRect(15, 42, 210, 65, BLACK);
-        tft.fillRect(30, 185, 20, 20, GREEN);  //pintamos un recuadro a lado del boton 1a3 para indicar su uso
-        inData = "D";
-      } else if (m23_btn.justPressed()) {  //pintamos recuadro indicador de uso
-        Serial.println("m23");
-        tft.fillRect(15, 42, 210, 65, BLACK);
-        tft.fillRect(30, 235, 20, 20, GREEN);
-        inData = "E";
-      } else if (reset_btn.justPressed()) {
+      */
+      if (!botonesBloqueados) {
+        if (m12_btn.justPressed()) {
+          Serial.println("m12");
+          tft.fillRect(15, 42, 210, 65, BLACK);
+          tft.fillRect(30, 135, 20, 20, GREEN);
+          inData = "T";
+          botonesBloqueados = true; //Cambiar la bandera
+        } else if (m13_btn.justPressed()) {
+          Serial.println("m13");
+          tft.fillRect(15, 42, 210, 65, BLACK);
+          tft.fillRect(30, 185, 20, 20, GREEN);
+          inData = "D";
+          botonesBloqueados = true;  // Cambiar la bandera
+        } else if (m23_btn.justPressed()) {
+          Serial.println("m23");
+          tft.fillRect(15, 42, 210, 65, BLACK);
+          tft.fillRect(30, 235, 20, 20, GREEN);
+          inData = "E";
+          botonesBloqueados = true;  // Cambiar la bandera
+        }
+      }
+
+      if (reset_btn.justPressed()) {
         tft.fillRect(15, 42, 210, 65, BLACK);
         tft.fillRect(30, 135, 20, 20, BLACK);
         tft.fillRect(30, 185, 20, 20, BLACK);
         tft.fillRect(30, 235, 20, 20, BLACK);
         Serial.println("r");
         inData = "R";
+        botonesBloqueados = false;  // Desbloquear botones
       }
 
-      if (menu_btn.justPressed()) {  //tE regresa al menú iniciañ
-        //Serial.println("Menú presionado");
+      if (menu_btn.justPressed()) {
         tft.fillScreen(BLACK);
-        showInitialMenu();  // Función para mostrar el menú inicial
+        showInitialMenu();
         inData = "I";
+        botonesBloqueados = false;  // Asegurar desbloqueo al regresar al menú
       }
       break;
 
     case 'T':
       update_button_list(buttons);
+
+      if ((inData == "T" || inData == "D" || inData == "E") && Serial.available() > 0) {
+        String tiempo = Serial.readStringUntil('\n');  // Leer tiempo del sensor
+        textTime(tiempo);  // Mostrar tiempo en la pantalla
+      }
+
       if (reset_btn.justPressed()) {
         tft.fillRect(15, 42, 210, 65, BLACK);
         tft.fillRect(30, 135, 20, 20, BLACK);
@@ -151,10 +173,17 @@ void loop() {
         tft.fillRect(30, 235, 20, 20, BLACK);
         Serial.println("r");
         inData = "R";
+        botonesBloqueados = false;
       }
       break;
     case 'D':
       update_button_list(buttons);
+
+      if ((inData == "T" || inData == "D" || inData == "E") && Serial.available() > 0) {
+        String tiempo = Serial.readStringUntil('\n');  // Leer tiempo del sensor
+        textTime(tiempo);  // Mostrar tiempo en la pantalla
+      }
+
       if (reset_btn.justPressed()) {
         tft.fillRect(15, 42, 210, 65, BLACK);
         tft.fillRect(30, 135, 20, 20, BLACK);
@@ -162,20 +191,28 @@ void loop() {
         tft.fillRect(30, 235, 20, 20, BLACK);
         Serial.println("r");
         inData = "R";
+        botonesBloqueados = false;
       }
       break;
     case 'E':
       update_button_list(buttons);
-      if (reset_btn.justPressed()) {
+
+      if ((inData == "T" || inData == "D" || inData == "E") && Serial.available() > 0) {
+        String tiempo = Serial.readStringUntil('\n');  // Leer tiempo del sensor
+        textTime(tiempo);  // Mostrar tiempo en la pantalla
+      }
+
+      if (reset_btn.justPressed()) {  // Solo se puede salir con Reset
         tft.fillRect(15, 42, 210, 65, BLACK);
         tft.fillRect(30, 135, 20, 20, BLACK);
         tft.fillRect(30, 185, 20, 20, BLACK);
         tft.fillRect(30, 235, 20, 20, BLACK);
         Serial.println("r");
-        inData = "R";
+        inData = "R";  // Volver a estado de selección
+        botonesBloqueados = false;
       }
-      break;
 
+      break;
 
     default:  //Imprime el tiempo medido en el TFT
       textTime(inData);

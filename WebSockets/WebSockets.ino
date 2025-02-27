@@ -166,7 +166,6 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, String command) {
 
 void setup() {
   Serial.begin(9600);  // Inicializa la comunicación serie a 9600 baudios
-
   delay(100);
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
   delay(100);
@@ -237,22 +236,21 @@ void loop() {
     if (mensaje.equals("r")) {
       double tiempo = 0;
       Serial2.println(tiempo);
+      Serial.print("r mensaje  enviado: ");
+      Serial.println(mensaje);
       stateC1 = false;
       stateC2 = false;
       stateC3 = false;
     }
     if (mensaje.equals("m12") || mensaje.equals("m13") || mensaje.equals("m23")) {
-      Serial.println("Entramos al if");
       Serial.println(mensaje);
       double tiempo = measureTime(mensaje);
       Serial2.println(tiempo);
+      Serial.print("m12m13m23 mensaje enviado: ");
       Serial.println(tiempo);
     }
   }
 }
-
-
-
 
 
 void int1() {
@@ -280,52 +278,111 @@ void int3() {
 }
 
 /*
+ * Lee el monitor serial cuando se recibe un mensaje de reset.
+ * Reinicia las banderas que permiten la lectura de los sensores.
+ */
+void readReset(){
+  String mensaje = Serial2.readStringUntil('\n');
+  Serial.print("readReset mensaje recibido: ");
+  Serial.println(mensaje);
+  stateC1 = false;
+  stateC2 = false;
+  stateC3 = false;
+}
+
+
+/*
   Función que calcula el tiempo que tarda entre dos sensores
 */
 double measureTime(String val) {
+  bool isReset = false; // Bandera que indica si se recibe un mensaje de reset
   if (val == "m12") {
-
-    while (stateC1 == false) {
-      Serial.println(val);
-      Serial.println("A1");
+    while (stateC1 == false && isReset == false) {
+      if(Serial2.available()){ // Verifica si se recibe un mensaje de reset mientras se espera la lectura de los sensores
+          readReset();
+          isReset = true; // Se activa la bandera de mensaje reset recibido
+          break;
+      }else{
+        Serial.println("A1");
+      }
     }
-    while (stateC2 == false) {
-      Serial.println("A2");
+    while (stateC2 == false && isReset == false) {
+      if(Serial2.available()){
+          readReset();
+          isReset = true;
+          break;
+      }else{
+        Serial.println("A2");
+      }
     }
-    timeDiff = abs(timeC2 - timeC1) / 1000000.0;
+    if(isReset){ // Valida si se recibio mensaje de reset
+      timeDiff = 0; 
+      isReset = false; // Cambia la bandera para restablecer las lecturas de los sensores 
+    }else{
+      timeDiff = abs(timeC2 - timeC1) / 1000000.0;
+    }
     stateC1 = false;
     stateC2 = false;
     stateC3 = false;
-    Serial2.println(timeDiff);  //este se publica en el touchpad
-
     return timeDiff;
+    
   } else if (val == "m13") {
-    while (stateC1 == false) {
-      Serial.println("B1");
+    while (stateC1 == false && isReset == false) {
+      if(Serial2.available()){
+          readReset();
+          isReset = true;
+          break;
+      }else{
+        Serial.println("B1");
+      }
     }
-    while (stateC3 == false) {
-      Serial.println("B3");
+    while (stateC3 == false && isReset == false) {
+      if(Serial2.available()){
+          readReset();
+          isReset = true;
+          break;
+      }else{
+        Serial.println("B3");
+      }
     }
-
-    timeDiff = abs(timeC3 - timeC1) / 1000000.0;
+    if(isReset){
+      timeDiff = 0;
+      isReset = false;
+    }else{
+      timeDiff = abs(timeC3 - timeC1) / 1000000.0;
+    }
     stateC1 = false;
     stateC2 = false;
     stateC3 = false;
-    Serial2.println(timeDiff);  //este se publica en el touchpad
     return timeDiff;
-  } else if (val == "m23") {
+  } else if (val == "m23" && isReset == false) {
     while (stateC2 == false) {
-      Serial.println("C2");
+      if(Serial2.available()){
+          readReset();
+          isReset = true;
+          break;
+      }else{
+        Serial.println("C2");
+      }
     }
-    while (stateC3 == false) {
-      Serial.println("C3");
+    while (stateC3 == false && isReset == false) {
+      if(Serial2.available()){
+          readReset();
+          isReset = true;
+          break;
+      }else{
+        Serial.println("C3");
+      }
     }
-    timeDiff = abs(timeC3 - timeC2) / 1000000.0;
+    if(isReset){
+      timeDiff = 0;
+      isReset = false;
+    }else{
+      timeDiff = abs(timeC3 - timeC2) / 1000000.0;
+    }
     stateC1 = false;
     stateC2 = false;
     stateC3 = false;
-    Serial2.println(timeDiff);
-    Serial2.println(timeDiff);  //este se publica en el touchpad
     return timeDiff;
   } else {
     stateC1 = false;
