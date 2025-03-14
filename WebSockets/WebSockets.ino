@@ -35,6 +35,7 @@ int gate[3] = { 33, 32, 35 };
 bool stateC1 = false;
 bool stateC2 = false;
 bool stateC3 = false;
+bool habilitaInterrupcion = false;
 volatile long timeC1 = 0;
 volatile long timeC2 = 0;
 volatile long timeC3 = 0;
@@ -106,8 +107,9 @@ void sendCalculating() {
 
 
 void setup_wifi_ap() {
-  const char *ssid_ap = "SmartTempo_06";  // Nombre del AP
-  const char *password_ap = "12345678";   // Contraseña del AP (mínimo 8 caracteres)
+  const char *ssid_ap = "SmartTempo_09";  // Nombre del AP
+  //const char *password_ap = "12345678";   // Contraseña del AP (mínimo 8 caracteres)
+  const char *password_ap = "ESobsgNm";
 
   // Conectar a Wi-Fi
   WiFi.softAP(ssid_ap, password_ap);
@@ -132,10 +134,10 @@ void disableCoreWatchdogs() {
 
 
 //Acciones a realizar--------------------------
-String m12() {
-  double tiempo = measureTime("m12");
-  return String(tiempo);
-}
+//String m12() {
+//  double tiempo = measureTime("m12");
+//  return String(tiempo);
+//}
 
 void sensorTask(void *parameter) {
   String val = *((String *)parameter);  // Convertir el parámetro a String
@@ -158,6 +160,7 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, String command) {
     xTaskCreate(sensorTask, "SensorTask", 4096, new String(command), 1, NULL);
   }
   if (command == "reset") {
+    habilitaInterrupcion = false;
     client->text("id1: 0:00");
   } else {
     client->text("Comando no reconocido");
@@ -241,9 +244,18 @@ void loop() {
       stateC1 = false;
       stateC2 = false;
       stateC3 = false;
+      habilitaInterrupcion = false;
+    }
+    if (mensaje.equals("c")){ //se recibe una c del boton menu de la pantalla modo wifi
+      habilitaInterrupcion = false;
+      stateC1 = false;
+      stateC2 = false;
+      stateC3 = false;
+      server.end(); //detener el servidor
     }
     if (mensaje.equals("m12") || mensaje.equals("m13") || mensaje.equals("m23")) {
       Serial.println(mensaje);
+      habilitaInterrupcion = true;
       double tiempo = measureTime(mensaje);
       Serial2.println(tiempo);
       Serial.print("m12m13m23 mensaje enviado: ");
@@ -254,26 +266,32 @@ void loop() {
 
 
 void int1() {
-  if ((millis() > timeCounter1 + timeThreshold)) {
-    timeC1 = micros();
-    stateC1 = true;
-    timeCounter1 = millis();
+  if(habilitaInterrupcion){
+    if ((millis() > timeCounter1 + timeThreshold)) {
+      timeC1 = micros();
+      stateC1 = true;
+      timeCounter1 = millis();
+    } 
   }
 }
 
 void int2() {
-  if ((millis() > timeCounter2 + timeThreshold)) {
-    timeC2 = micros();
-    stateC2 = true;
-    timeCounter2 = millis();
+  if(habilitaInterrupcion){
+    if ((millis() > timeCounter2 + timeThreshold)) {
+      timeC2 = micros();
+      stateC2 = true;
+      timeCounter2 = millis();
+    }
   }
 }
 
 void int3() {
-  if ((millis() > timeCounter3 + timeThreshold)) {
-    timeC3 = micros();
-    stateC3 = true;
-    timeCounter3 = millis();
+  if(habilitaInterrupcion){
+    if ((millis() > timeCounter3 + timeThreshold)) {
+      timeC3 = micros();
+      stateC3 = true;
+      timeCounter3 = millis();
+    }
   }
 }
 
@@ -394,6 +412,7 @@ double measureTime(String val) {
 }
 
 double measureTimeP(String val) {
+  habilitaInterrupcion = true;
   if (val == "m12") {
     unsigned long startTime = millis();  // Tiempo inicial
     unsigned long timeout = 300000;      // Tiempo máximo en milisegundos (30 segundos)

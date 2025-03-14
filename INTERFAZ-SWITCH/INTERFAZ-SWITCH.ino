@@ -86,7 +86,7 @@ void loop() {
     case 'I':                               // Caso con la pantalla inicial
       update_button_list(initial_buttons);  //Actualiza los botones "Bluetooth" y "Manual" para activarlos
 
-      //Condición para cuando apretamos el botón bluetooth
+      //Condición para cuando apretamos el botón wifi
       if (bt_btn.justPressed()) {
         isBluetoothConnected = true;
         fondoBluetooth();
@@ -98,10 +98,10 @@ void loop() {
       }
       break;
 
-    case 'B':                    // Caso Bluetooth
+    case 'B':                    // Caso Wifi
       update_button_list(menu);  //use helper function
       if (menu_btn.justPressed()) {
-        //Serial.println("Menú presionado");
+        Serial.println("c"); //se manda señal de reinicio para bloquear las lecturas de los sensores
         tft.fillScreen(BLACK);  //Pinta la pantalla de negro
         showInitialMenu();      // Función para mostrar el menú inicial
         inData = "I";
@@ -256,13 +256,13 @@ void fondoBluetooth() {
   tft.print("ssid:");
   tft.setCursor(14, 85);
   tft.setTextColor(RED);
-  tft.print("SmartTempo06");
+  tft.print("SmartTempo09");
   tft.setCursor(30, 130);
   tft.setTextColor(WHITE);
   tft.print("Passsword:");
   tft.setCursor(45, 160);
   tft.setTextColor(RED);
-  tft.print("12345678");
+  tft.print("ESobsgNm");
   tft.setCursor(90, 200);
   tft.setTextColor(WHITE);
   tft.print("IP");
