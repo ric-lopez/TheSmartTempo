@@ -8,7 +8,7 @@ body {
 
 .container {
     text-align: center;
-    margin-top: 50px;
+    margin-top: 20px;
     display: flex;
     flex-direction: column; /* Mantiene los elementos en forma vertical */
     align-items: center; /* Centra horizontalmente */
@@ -50,9 +50,23 @@ body {
     border-radius: 5px; /* Opcional, para mejorar el diseño */
 }
 
-.boton:hover {
+.reset:hover{
+    background-color: crimson;
+}
+
+.btn:hover {
     background-color: darkblue;
 }
 
+.btn:active {
+    background-color: green;
+}
+.btn:focus {
+    background-color: green;
+}
+
+.ocultar {
+    visibility: hidden;
+}
 
 
