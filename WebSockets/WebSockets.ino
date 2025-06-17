@@ -6,7 +6,7 @@
 
     SMART TIMER
 
-  Última modificación: 14-ENERO-2024
+  Última modificación: 02-JUNIO-2025
 */
 
 #include "WiFi.h"
@@ -40,6 +40,10 @@ volatile long timeC1 = 0;
 volatile long timeC2 = 0;
 volatile long timeC3 = 0;
 volatile double timeDiff = 0;
+volatile double timeDiff2 = 0;
+volatile double t1 = 0;
+volatile double t2 = 0;
+
 
 //Variables para mejorar el funcionamiento del botón
 long timeCounter1 = 0;
@@ -58,10 +62,9 @@ const unsigned long webSocketInterval = 5000;  // 5 segundos
 // Variable para almacenar el tiempo (ejemplo en segundos)
 unsigned long tiempoMedido = 0;
 
+//Nuevo botón
+volatile long timeHalf = 0;
 
-String mensaje;
-String tiempoMedido2;
-String resultado;
 
 // Función que se ejecuta cuando se recibe un evento WebSocket
 void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
@@ -107,9 +110,9 @@ void sendCalculating() {
 
 
 void setup_wifi_ap() {
-  const char *ssid_ap = "SmartTempo_09";  // Nombre del AP
+  const char *ssid_ap = "SmartTempo_00";  // Nombre del AP
   //const char *password_ap = "12345678";   // Contraseña del AP (mínimo 8 caracteres)
-  const char *password_ap = "ESobsgNm";
+  const char *password_ap = "12345678";
 
   // Conectar a Wi-Fi
   WiFi.softAP(ssid_ap, password_ap);
@@ -141,10 +144,12 @@ void disableCoreWatchdogs() {
 
 void sensorTask(void *parameter) {
   String val = *((String *)parameter);  // Convertir el parámetro a String
-  double result = measureTimeP(val);    // Llama a tu función de medición
-  String tiempo = String(result);
+  //double result = measureTimeP(val);    // Llama a tu función de medición
+  String result = measureTimeP(val);    // Llama a tu función de medición
+  //String tiempo = String(result);
   Serial.println(result);
-  ws.textAll("id1:" + tiempo + " segundos");  // Enviar el resultado
+  ws.textAll("id1:" + result);  // Enviar el resultado
+  //ws.textAll("id1:" + tiempo + " segundos");  // Enviar el resultado
   vTaskDelete(NULL);                          // Eliminar la tarea después de completarla
   if (val == "reset") {
     ws.textAll("id1: 0:00");
@@ -155,7 +160,7 @@ void sensorTask(void *parameter) {
 }
 
 void handleWebSocketMessage(AsyncWebSocketClient *client, String command) {
-  if (command == "m12" || command == "m13" || command == "m23") {
+  if (command == "m12" || command == "m13" || command == "m23" || command == "m123") {
     client->text("id1: Medición iniciada para " + command);
     xTaskCreate(sensorTask, "SensorTask", 4096, new String(command), 1, NULL);
   }
@@ -198,18 +203,18 @@ void setup() {
   }
 
   // Servir archivos estáticos
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send(SPIFFS, "/index.html", String(), false);
   });
-  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send(SPIFFS, "/style.css", "text/css");
   });
-  server.on("/scriptP.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/scriptP.js", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send(SPIFFS, "/scriptP.js", "application/javascript");
   });
 
   //Función para error 404
-  server.onNotFound([](AsyncWebServerRequest *request) {
+  server.onNotFound([](AsyncWebServerRequest * request) {
     request->send(404, "text/plain", "Error 404");
   });
 }
@@ -246,37 +251,46 @@ void loop() {
       stateC3 = false;
       habilitaInterrupcion = false;
     }
-    if (mensaje.equals("c")){ //se recibe una c del boton menu de la pantalla modo wifi
+    if (mensaje.equals("c")) { //se recibe una c del boton menu de la pantalla modo wifi
       habilitaInterrupcion = false;
       stateC1 = false;
       stateC2 = false;
       stateC3 = false;
       server.end(); //detener el servidor
     }
-    if (mensaje.equals("m12") || mensaje.equals("m13") || mensaje.equals("m23")) {
+    if (mensaje.equals("m12") || mensaje.equals("m13") || mensaje.equals("m23") || mensaje.equals("m123")) {
       Serial.println(mensaje);
       habilitaInterrupcion = true;
-      double tiempo = measureTime(mensaje);
-      Serial2.println(tiempo);
-      Serial.print("m12m13m23 mensaje enviado: ");
-      Serial.println(tiempo);
+      String tiempo = measureTime(mensaje);
+      Serial.println(tiempo.charAt(12));
+      if (tiempo.charAt(12) == '-') {
+        Serial2.println("ERROR");
+        Serial.println("ERROR");
+      } else {
+
+        Serial2.println(tiempo);
+        Serial.print("m12m13m23 mensaje enviado: ");
+        Serial.println(tiempo);
+
+
+      }
     }
   }
 }
 
 
 void int1() {
-  if(habilitaInterrupcion){
+  if (habilitaInterrupcion) {
     if ((millis() > timeCounter1 + timeThreshold)) {
       timeC1 = micros();
       stateC1 = true;
       timeCounter1 = millis();
-    } 
+    }
   }
 }
 
 void int2() {
-  if(habilitaInterrupcion){
+  if (habilitaInterrupcion) {
     if ((millis() > timeCounter2 + timeThreshold)) {
       timeC2 = micros();
       stateC2 = true;
@@ -286,7 +300,7 @@ void int2() {
 }
 
 void int3() {
-  if(habilitaInterrupcion){
+  if (habilitaInterrupcion) {
     if ((millis() > timeCounter3 + timeThreshold)) {
       timeC3 = micros();
       stateC3 = true;
@@ -295,11 +309,12 @@ void int3() {
   }
 }
 
+
 /*
- * Lee el monitor serial cuando se recibe un mensaje de reset.
- * Reinicia las banderas que permiten la lectura de los sensores.
- */
-void readReset(){
+   Lee el monitor serial cuando se recibe un mensaje de reset.
+   Reinicia las banderas que permiten la lectura de los sensores.
+*/
+void readReset() {
   String mensaje = Serial2.readStringUntil('\n');
   Serial.print("readReset mensaje recibido: ");
   Serial.println(mensaje);
@@ -312,106 +327,204 @@ void readReset(){
 /*
   Función que calcula el tiempo que tarda entre dos sensores
 */
-double measureTime(String val) {
+String measureTime(String val) {
   bool isReset = false; // Bandera que indica si se recibe un mensaje de reset
+  bool errorMed = false;
   if (val == "m12") {
     while (stateC1 == false && isReset == false) {
-      if(Serial2.available()){ // Verifica si se recibe un mensaje de reset mientras se espera la lectura de los sensores
-          readReset();
-          isReset = true; // Se activa la bandera de mensaje reset recibido
-          break;
-      }else{
+      if (Serial2.available()) { // Verifica si se recibe un mensaje de reset mientras se espera la lectura de los sensores
+        readReset();
+        isReset = true; // Se activa la bandera de mensaje reset recibido
+        break;
+      } else {
         Serial.println("A1");
       }
     }
     while (stateC2 == false && isReset == false) {
-      if(Serial2.available()){
-          readReset();
-          isReset = true;
-          break;
-      }else{
+      if (Serial2.available()) {
+        readReset();
+        isReset = true;
+        break;
+      } else {
         Serial.println("A2");
       }
     }
-    if(isReset){ // Valida si se recibio mensaje de reset
-      timeDiff = 0; 
-      isReset = false; // Cambia la bandera para restablecer las lecturas de los sensores 
-    }else{
+    if (isReset) { // Valida si se recibio mensaje de reset
+      timeDiff = 0;
+      isReset = false; // Cambia la bandera para restablecer las lecturas de los sensores
+    } else {
       timeDiff = abs(timeC2 - timeC1) / 1000000.0;
     }
     stateC1 = false;
     stateC2 = false;
     stateC3 = false;
-    return timeDiff;
-    
+    return String(timeDiff);
+
   } else if (val == "m13") {
     while (stateC1 == false && isReset == false) {
-      if(Serial2.available()){
-          readReset();
-          isReset = true;
-          break;
-      }else{
+      if (Serial2.available()) {
+        readReset();
+        isReset = true;
+        break;
+      } else {
         Serial.println("B1");
       }
     }
     while (stateC3 == false && isReset == false) {
-      if(Serial2.available()){
-          readReset();
-          isReset = true;
-          break;
-      }else{
+      if (Serial2.available()) {
+        readReset();
+        isReset = true;
+        break;
+      } else {
         Serial.println("B3");
       }
     }
-    if(isReset){
+    if (isReset) {
       timeDiff = 0;
       isReset = false;
-    }else{
+    } else {
       timeDiff = abs(timeC3 - timeC1) / 1000000.0;
     }
     stateC1 = false;
     stateC2 = false;
     stateC3 = false;
-    return timeDiff;
+    return String(timeDiff);
   } else if (val == "m23" && isReset == false) {
     while (stateC2 == false) {
-      if(Serial2.available()){
-          readReset();
-          isReset = true;
-          break;
-      }else{
+      if (Serial2.available()) {
+        readReset();
+        isReset = true;
+        break;
+      } else {
         Serial.println("C2");
       }
     }
     while (stateC3 == false && isReset == false) {
-      if(Serial2.available()){
-          readReset();
-          isReset = true;
-          break;
-      }else{
+      if (Serial2.available()) {
+        readReset();
+        isReset = true;
+        break;
+      } else {
         Serial.println("C3");
       }
     }
-    if(isReset){
+    if (isReset) {
       timeDiff = 0;
       isReset = false;
-    }else{
+    } else {
       timeDiff = abs(timeC3 - timeC2) / 1000000.0;
     }
     stateC1 = false;
     stateC2 = false;
     stateC3 = false;
-    return timeDiff;
+    return String(timeDiff);
+  } else if (val == "m123" && isReset == false) {
+    int direction = 0;
+    while (!stateC1 && !stateC3) {
+      if (Serial2.available()) {
+        readReset();
+        isReset = true;
+        break;
+      }
+      if (stateC2) {
+        stateC2 = false;
+      }
+    }
+
+    if (!isReset) {
+      if (stateC1) {
+        direction = 1;  // 1a2a3
+        while (!stateC2 && !isReset) {
+          if (Serial2.available()) {
+            readReset();
+            break;
+          }
+          if (stateC3) {
+            isReset = true;
+            errorMed = true;
+
+            break;
+            //timeDiff = -1;
+            //break;
+          }
+        }
+        while (!stateC3 && !isReset) {
+          if (Serial2.available()) {
+            readReset();
+            isReset = true;
+            break;
+          }
+        }
+      } else if (stateC3) {
+        direction = 2;  // 3a2a1
+        while (!stateC2 && !isReset) {
+          if (Serial2.available()) {
+            readReset();
+            isReset = true;
+            break;
+          }
+          if (stateC1) {
+            isReset = true;
+            errorMed = true;
+
+            break;
+            //timeDiff = -1;
+            //break;
+          }
+        }
+        while (!stateC1 && !isReset) {
+          if (Serial2.available()) {
+            readReset();
+            isReset = true;
+            break;
+          }
+        }
+      }
+    }
+    if (isReset && errorMed) {
+      timeDiff = -1;
+      isReset = false;
+      errorMed = false;
+    } else if (isReset) {
+      timeDiff = 0;
+      isReset = false;
+    } else {
+      if (direction == 1) {
+        timeDiff = (abs(timeC2 - timeC1) + abs(timeC3 - timeC2)) / 1000000.0;
+        t1 = abs(timeC2 - timeC1) / 1000000.0;
+        t2 = abs(timeC3 - timeC2) / 1000000.0;
+      } else if (direction == 2) {
+        //timeDiff = (abs(timeC2 - timeC3) + abs(timeC1 - timeC2)) / 1000000.0;
+        t1 = abs(timeC3 - timeC2) / 1000000.0;
+        t2 = abs(timeC2 - timeC1) / 1000000.0;
+        timeDiff = t1 + t2;
+      } else {
+        timeDiff = 0;
+        //timeDiff = direccion + ','+ t1+ ','+ t2 +','+t1timeDiff ;  // No hubo paso válido
+      }
+      //Serial2.println(timeDiff);
+      Serial.println(direction + ',' + t1 + ',' + t2 + ',' + timeDiff);
+      Serial.println(t1);
+      Serial.println(t2);
+    }
+
+    // Reset estados
+    stateC1 = false;
+    stateC2 = false;
+    stateC3 = false;
+    //return String(timeDiff);
+    return String(direction) + ',' + String(t1) + ',' + String(t2) + ',' + String(timeDiff);
   } else {
     stateC1 = false;
     stateC2 = false;
     stateC3 = false;
     timeDiff = 0;
-    return timeDiff;
+    return String(timeDiff);
   }
 }
 
-double measureTimeP(String val) {
+
+String measureTimeP(String val) {
   habilitaInterrupcion = true;
   if (val == "m12") {
     unsigned long startTime = millis();  // Tiempo inicial
@@ -437,7 +550,7 @@ double measureTimeP(String val) {
       // Verificar timeout
       if (millis() - startTime > timeout) {
         Serial.println("Timeout alcanzado esperando a los sensores.");
-        return -1;  // Retornar un valor especial en caso de timeout
+        return "-1";  // Retornar un valor especial en caso de timeout
       }
     }
 
@@ -445,7 +558,7 @@ double measureTimeP(String val) {
     timeDiff = abs(timeC2 - timeC1) / 1000000.0;
     stateC1 = stateC2 = stateC3 = false;
 
-    return timeDiff;
+    return String(timeDiff);
   } else if (val == "m13") {
     unsigned long startTime = millis();  // Tiempo inicial
     unsigned long timeout = 300000;      // Tiempo máximo en milisegundos (30 segundos)
@@ -466,7 +579,7 @@ double measureTimeP(String val) {
       // Verificar timeout
       if (millis() - startTime > timeout) {
         Serial.println("Timeout alcanzado esperando a los sensores.");
-        return -1;  // Retornar un valor especial en caso de timeout
+        return "-1";  // Retornar un valor especial en caso de timeout
       }
     }
 
@@ -474,7 +587,7 @@ double measureTimeP(String val) {
     timeDiff = abs(timeC3 - timeC1) / 1000000.0;
     stateC1 = stateC2 = stateC3 = false;
 
-    return timeDiff;
+    return String(timeDiff);
   } else if (val == "m23") {
     // Reinicia los estados y tiempos de los sensores
     stateC1 = stateC2 = stateC3 = false;
@@ -483,7 +596,6 @@ double measureTimeP(String val) {
     unsigned long startTime = millis();  // Tiempo inicial
     unsigned long timeout = 300000;      // Tiempo máximo en milisegundos (30 segundos)
 
-    // Esperar a que ambos sensores estén listos
     while (!(stateC2 && stateC3)) {
       if (stateC2 == false) {
         Serial.println("Esperando a stateC2...");
@@ -497,7 +609,7 @@ double measureTimeP(String val) {
       // Verificar timeout
       if (millis() - startTime > timeout) {
         Serial.println("Timeout alcanzado esperando a los sensores.");
-        return -1;  // Retornar un valor especial en caso de timeout
+        return "-1";  // Retornar un valor especial en caso de timeout
       }
     }
 
@@ -505,10 +617,68 @@ double measureTimeP(String val) {
     timeDiff = abs(timeC3 - timeC2) / 1000000.0;
     stateC1 = stateC2 = stateC3 = false;
 
-    return timeDiff;
-  } else {
+    return String(timeDiff);
+  } else if (val == "m123") {
+    // Reinicia los estados y tiempos de los sensores
     stateC1 = stateC2 = stateC3 = false;
-    timeDiff = 0;
-    return timeDiff;
+    timeC1 = timeC2 = timeC3 = 0;
+
+    unsigned long startTime = millis();  // Tiempo inicial
+    unsigned long timeout = 300000;      // Tiempo máximo en milisegundos (30 segundos)
+    int direction = 0;
+    bool errorMed = false;
+    while (!stateC1 && !stateC3) {
+      if (stateC2) {
+        stateC2 = false;
+      }
+
+      Serial.println("Esperando a stateC1 o a stateC3");
+      if (stateC1) {
+        direction = 0;
+        while (!stateC2) {
+          Serial.println("Esperando a stateC2");
+          if (stateC3) {
+            errorMed = true;
+          }
+        }
+        while (!stateC3) {
+          Serial.println("Esperando a stateC3");
+        }
+
+      } else if (stateC3) {
+        direction = 1;
+        while (!stateC2) {
+          Serial.println("Esperando a stateC2");
+          if (stateC1) {
+            errorMed = true;
+          }
+        }
+        while (!stateC1) {
+          Serial.println("Esperando a stateC1");
+        }
+      }
+
+      // Verificar timeout
+      if (millis() - startTime > timeout) {
+        Serial.println("Timeout alcanzado esperando a los sensores.");
+        return "-1";  // Retornar un valor especial en caso de timeout
+      }
+    }
+    if (errorMed) {
+      return "ERROR";
+    } else {
+      // Calcular la diferencia de tiempo si ambos sensores respondieron a tiempo
+      t1 = abs(timeC2 - timeC1) / 1000000.0;
+      t2 = abs(timeC3 - timeC2) / 1000000.0;
+      timeDiff = abs(timeC3 - timeC1) / 1000000.0;
+      stateC1 = stateC2 = stateC3 = false;
+
+      return String(direction) + "," + String(t1) + "," + String(t2) + "," + String(timeDiff);
+    }
+  } else {
+
+    stateC1 = stateC2 = stateC3 = false;
+    timeDiff2 = 0;
+    return String(timeDiff2);
   }
 }

@@ -21,7 +21,7 @@ bool botonesBloqueados = false;  // Controla si los botones están bloqueados
 
 
 //Arreglo en el que se declaran toods los botones que se usan en la interfaz
-Adafruit_GFX_Button bt_btn, manual_btn, menu_btn, m12_btn, m13_btn, m23_btn, reset_btn;
+Adafruit_GFX_Button bt_btn, manual_btn, menu_btn, m12_btn, m13_btn, m23_btn, m123_btn, reset_btn;
 
 String inData = "INIT";  // Estado inicial
 int pixel_x, pixel_y;    // Touch_getXY() actualiza variables globales
@@ -30,7 +30,7 @@ bool isBluetoothConnected = false;  // Para manejar el estado de la conexión Bl
 
 /*sEPARAMOS LOS */
 Adafruit_GFX_Button *initial_buttons[] = { &bt_btn, &manual_btn, NULL };
-Adafruit_GFX_Button *buttons[] = { &m12_btn, &m13_btn, &m23_btn, &reset_btn, NULL };
+Adafruit_GFX_Button *buttons[] = { &m12_btn, &m13_btn, &m23_btn, &m123_btn, &reset_btn, NULL };
 Adafruit_GFX_Button *menu[] = { &menu_btn, NULL };
 
 bool Touch_getXY(void) {
@@ -122,31 +122,44 @@ void loop() {
         if (m12_btn.justPressed()) {
           Serial.println("m12");
           tft.fillRect(15, 42, 210, 65, BLACK);
-          tft.fillRect(30, 135, 20, 20, GREEN);
+          m12_btn.initButton(&tft, 60, 145, 100, 50, WHITE, GREEN, BLACK, "1-2", 2);
           inData = "T";
           botonesBloqueados = true; //Cambiar la bandera
         } else if (m13_btn.justPressed()) {
           Serial.println("m13");
           tft.fillRect(15, 42, 210, 65, BLACK);
-          tft.fillRect(30, 185, 20, 20, GREEN);
+          m13_btn.initButton(&tft, 60, 216, 100, 50, WHITE, GREEN, BLACK, "1-3", 2);
           inData = "D";
           botonesBloqueados = true;  // Cambiar la bandera
         } else if (m23_btn.justPressed()) {
           Serial.println("m23");
           tft.fillRect(15, 42, 210, 65, BLACK);
-          tft.fillRect(30, 235, 20, 20, GREEN);
+          m23_btn.initButton(&tft, 180, 145, 100, 50, WHITE, GREEN, BLACK, "2-3", 2);
           inData = "E";
+          botonesBloqueados = true;  // Cambiar la bandera
+        } else if (m123_btn.justPressed()) {
+          Serial.println("m123");
+          tft.fillRect(15, 42, 210, 65, BLACK);
+          m123_btn.initButton(&tft, 180, 216, 100, 50, WHITE, GREEN, BLACK, "1-2-3", 2);
+          inData = "F";
           botonesBloqueados = true;  // Cambiar la bandera
         }
       }
 
       if (reset_btn.justPressed()) {
         tft.fillRect(15, 42, 210, 65, BLACK);
-        tft.fillRect(30, 135, 20, 20, BLACK);
-        tft.fillRect(30, 185, 20, 20, BLACK);
-        tft.fillRect(30, 235, 20, 20, BLACK);
+        m12_btn.initButton(&tft, 60, 145, 100, 50, WHITE, CYAN, BLACK, "1-2", 2);
+        m13_btn.initButton(&tft, 60, 216, 100, 50, WHITE, CYAN, BLACK, "1-3", 2);
+        m23_btn.initButton(&tft, 180, 145, 100, 50, WHITE, CYAN, BLACK, "2-3", 2);
+        m123_btn.initButton(&tft, 180, 216, 100, 50, WHITE, CYAN, BLACK, "1-2-3", 2);
         Serial.println("r");
         inData = "R";
+        m12_btn.drawButton(false);
+        m13_btn.drawButton(false);
+        m23_btn.drawButton(false);
+        m123_btn.drawButton(false);
+        reset_btn.drawButton(false);
+        menu_btn.drawButton(false);
         botonesBloqueados = false;  // Desbloquear botones
       }
 
@@ -161,57 +174,112 @@ void loop() {
     case 'T':
       update_button_list(buttons);
 
-      if ((inData == "T" || inData == "D" || inData == "E") && Serial.available() > 0) {
+      if ((inData == "T" || inData == "D" || inData == "E" || inData == "F") && Serial.available() > 0) {
         String tiempo = Serial.readStringUntil('\n');  // Leer tiempo del sensor
         textTime(tiempo);  // Mostrar tiempo en la pantalla
       }
 
       if (reset_btn.justPressed()) {
         tft.fillRect(15, 42, 210, 65, BLACK);
-        tft.fillRect(30, 135, 20, 20, BLACK);
-        tft.fillRect(30, 185, 20, 20, BLACK);
-        tft.fillRect(30, 235, 20, 20, BLACK);
+        m12_btn.initButton(&tft, 60, 145, 100, 50, WHITE, CYAN, BLACK, "1-2", 2);
+        m13_btn.initButton(&tft, 60, 216, 100, 50, WHITE, CYAN, BLACK, "1-3", 2);
+        m23_btn.initButton(&tft, 180, 145, 100, 50, WHITE, CYAN, BLACK, "2-3", 2);
+        m123_btn.initButton(&tft, 180, 216, 100, 50, WHITE, CYAN, BLACK, "1-2-3", 2);
         Serial.println("r");
         inData = "R";
+        m12_btn.drawButton(false);
+        m13_btn.drawButton(false);
+        m23_btn.drawButton(false);
+        m123_btn.drawButton(false);
+        reset_btn.drawButton(false);
+        menu_btn.drawButton(false);
         botonesBloqueados = false;
       }
       break;
     case 'D':
       update_button_list(buttons);
 
-      if ((inData == "T" || inData == "D" || inData == "E") && Serial.available() > 0) {
+      if ((inData == "T" || inData == "D" || inData == "E" || inData == "F") && Serial.available() > 0) {
         String tiempo = Serial.readStringUntil('\n');  // Leer tiempo del sensor
+        Serial.println(tiempo);
         textTime(tiempo);  // Mostrar tiempo en la pantalla
       }
 
       if (reset_btn.justPressed()) {
         tft.fillRect(15, 42, 210, 65, BLACK);
-        tft.fillRect(30, 135, 20, 20, BLACK);
-        tft.fillRect(30, 185, 20, 20, BLACK);
-        tft.fillRect(30, 235, 20, 20, BLACK);
+        m12_btn.initButton(&tft, 60, 145, 100, 50, WHITE, CYAN, BLACK, "1-2", 2);
+        m13_btn.initButton(&tft, 60, 216, 100, 50, WHITE, CYAN, BLACK, "1-3", 2);
+        m23_btn.initButton(&tft, 180, 145, 100, 50, WHITE, CYAN, BLACK, "2-3", 2);
+        m123_btn.initButton(&tft, 180, 216, 100, 50, WHITE, CYAN, BLACK, "1-2-3", 2);
         Serial.println("r");
         inData = "R";
+        m12_btn.drawButton(false);
+        m13_btn.drawButton(false);
+        m23_btn.drawButton(false);
+        m123_btn.drawButton(false);
+        reset_btn.drawButton(false);
+        menu_btn.drawButton(false);
         botonesBloqueados = false;
       }
       break;
     case 'E':
       update_button_list(buttons);
 
-      if ((inData == "T" || inData == "D" || inData == "E") && Serial.available() > 0) {
+      if ((inData == "T" || inData == "D" || inData == "E" || inData == "F") && Serial.available() > 0) {
         String tiempo = Serial.readStringUntil('\n');  // Leer tiempo del sensor
+        tiempo.trim();
         textTime(tiempo);  // Mostrar tiempo en la pantalla
       }
 
       if (reset_btn.justPressed()) {  // Solo se puede salir con Reset
         tft.fillRect(15, 42, 210, 65, BLACK);
-        tft.fillRect(30, 135, 20, 20, BLACK);
-        tft.fillRect(30, 185, 20, 20, BLACK);
-        tft.fillRect(30, 235, 20, 20, BLACK);
+        m12_btn.initButton(&tft, 60, 145, 100, 50, WHITE, CYAN, BLACK, "1-2", 2);
+        m13_btn.initButton(&tft, 60, 216, 100, 50, WHITE, CYAN, BLACK, "1-3", 2);
+        m23_btn.initButton(&tft, 180, 145, 100, 50, WHITE, CYAN, BLACK, "2-3", 2);
+        m123_btn.initButton(&tft, 180, 216, 100, 50, WHITE, CYAN, BLACK, "1-2-3", 2);
         Serial.println("r");
+        m12_btn.drawButton(false);
+        m13_btn.drawButton(false);
+        m23_btn.drawButton(false);
+        m123_btn.drawButton(false);
+        reset_btn.drawButton(false);
+        menu_btn.drawButton(false);
         inData = "R";  // Volver a estado de selección
         botonesBloqueados = false;
       }
 
+      break;
+    case 'F':
+      update_button_list(buttons);
+
+      if ((inData == "T" || inData == "D" || inData == "E" || inData == "F") && Serial.available() > 0) {
+        String tiempo = Serial.readStringUntil('\n');  // Leer tiempo del sensor
+        Serial.println(tiempo);
+        Serial.println(tiempo.substring(1, 2));
+        if (tiempo.substring(1, 2).equals(",")) {
+          textTime2(tiempo);  // Mostrar tiempo en la pantalla
+          
+        }else{
+        textTime(tiempo);  // Mostrar tiempo en la pantalla
+        }
+      }
+
+      if (reset_btn.justPressed()) {
+        tft.fillRect(15, 42, 210, 65, BLACK);
+        m12_btn.initButton(&tft, 60, 145, 100, 50, WHITE, CYAN, BLACK, "1-2", 2);
+        m13_btn.initButton(&tft, 60, 216, 100, 50, WHITE, CYAN, BLACK, "1-3", 2);
+        m23_btn.initButton(&tft, 180, 145, 100, 50, WHITE, CYAN, BLACK, "2-3", 2);
+        m123_btn.initButton(&tft, 180, 216, 100, 50, WHITE, CYAN, BLACK, "1-2-3", 2);
+        Serial.println("r");
+        inData = "R";
+        m12_btn.drawButton(false);
+        m13_btn.drawButton(false);
+        m23_btn.drawButton(false);
+        m123_btn.drawButton(false);
+        reset_btn.drawButton(false);
+        menu_btn.drawButton(false);
+        botonesBloqueados = false;
+      }
       break;
 
     default:  //Imprime el tiempo medido en el TFT
@@ -231,15 +299,17 @@ void showMeasurementButtons() {
   tft.print("Medir tiempos");
 
   //buttonSetup(); // Configurar y dibujar botones de medición
-  m12_btn.initButton(&tft, 120, 145, 100, 40, WHITE, CYAN, BLACK, "1 a 2", 2);
-  m13_btn.initButton(&tft, 120, 195, 100, 40, WHITE, CYAN, BLACK, "1 a 3", 2);
-  m23_btn.initButton(&tft, 120, 245, 100, 40, WHITE, CYAN, BLACK, "2 a 3", 2);
-  reset_btn.initButton(&tft, 180, 287, 90, 30, WHITE, RED, BLACK, "Reset", 2);
-  menu_btn.initButton(&tft, 50, 287, 90, 30, WHITE, WHITE, BLACK, "Menu", 2);
+  m12_btn.initButton(&tft, 60, 145, 100, 50, WHITE, CYAN, BLACK, "1-2", 2);
+  m13_btn.initButton(&tft, 60, 216, 100, 50, WHITE, CYAN, BLACK, "1-3", 2);
+  m23_btn.initButton(&tft, 180, 145, 100, 50, WHITE, CYAN, BLACK, "2-3", 2);
+  m123_btn.initButton(&tft, 180, 216, 100, 50, WHITE, CYAN, BLACK, "1-2-3", 2);
+  reset_btn.initButton(&tft, 180, 287, 100, 50, WHITE, RED, BLACK, "Reset", 2);
+  menu_btn.initButton(&tft, 60, 287, 100, 50, WHITE, WHITE, BLACK, "Menu", 2);
 
   m12_btn.drawButton(false);
   m13_btn.drawButton(false);
   m23_btn.drawButton(false);
+  m123_btn.drawButton(false);
   reset_btn.drawButton(false);
   menu_btn.drawButton(false);
 }
@@ -256,13 +326,13 @@ void fondoBluetooth() {
   tft.print("ssid:");
   tft.setCursor(14, 85);
   tft.setTextColor(RED);
-  tft.print("SmartTempo09");
+  tft.print("SmartTempo_00");
   tft.setCursor(30, 130);
   tft.setTextColor(WHITE);
   tft.print("Passsword:");
   tft.setCursor(45, 160);
   tft.setTextColor(RED);
-  tft.print("ESobsgNm");
+  tft.print("12345678");
   tft.setCursor(90, 200);
   tft.setTextColor(WHITE);
   tft.print("IP");
@@ -321,9 +391,51 @@ void disableAllButtons() {
 
 /* Mostrar el tiempo en pantalla*/
 void textTime(String val) {
-  tft.fillRect(30, 80, 200, 30, BLACK);
-  tft.setTextColor(WHITE);
-  tft.setTextSize(2.5);
-  tft.setCursor(60, 65);
-  tft.print("t = " + val + " s.");
+  Serial.println(val);
+  val.trim();
+  if (val.equals("ERROR")) {
+    tft.fillRect(30, 80, 200, 30, BLACK);
+    tft.setTextColor(WHITE);
+    tft.setTextSize(2.5);
+    tft.setCursor(20, 65);
+    tft.print("ERROR DE MEDICION");
+  } else {
+    tft.fillRect(30, 80, 600, 40, BLACK);
+    tft.setTextColor(WHITE);
+    tft.setTextSize(2.5);
+    tft.setCursor(60, 65);
+    tft.print("t = " + val + " s.");
+  }
+}
+
+void textTime2(String values) {
+  values.trim();
+  String direccion = values.substring(0, 1) ;
+  Serial.println(direccion);
+  String t1 = values.substring(2, 6);
+  String t2 = values.substring(7, 11);
+  String t3 = values.substring(12);
+
+  if (direccion.equals("1") ) {
+    tft.fillRect(30, 80, 200, 30, BLACK);
+    tft.setTextColor(WHITE);
+    tft.setTextSize(2.5);
+    tft.setCursor(60, 43);
+    tft.print("1a2 = " + t1 + " s.");
+    tft.setCursor(60, 65);
+    tft.print("2a3 = " + t2 + " s.");
+    tft.setCursor(60, 88);
+    tft.print("1a3 = " + t3 + " s.");
+  } else if (direccion.equals("2") ) {
+    tft.fillRect(30, 80, 200, 30, BLACK);
+    tft.setTextColor(WHITE);
+    tft.setTextSize(2.5);
+    tft.setCursor(60, 43);
+    tft.print("3a2 = " + t1 + " s.");
+    tft.setCursor(60, 65);
+    tft.print("2a1 = " + t2 + " s.");
+    tft.setCursor(60, 88);
+    tft.print("3a1 = " + t3 + " s.");
+
+  }
 }
